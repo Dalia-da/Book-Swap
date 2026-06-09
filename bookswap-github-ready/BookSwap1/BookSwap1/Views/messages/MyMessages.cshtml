@@ -1,0 +1,17 @@
+﻿@model BookSwap.Models.ApplicationUser
+
+@{
+    ViewData["Title"] = "My Messages";
+}
+
+<h1>My Messages</h1>
+
+@if (Model != null)
+{
+    <p>Welcome, @Model.Name!</p>
+    <img src="@Model.ImagePath" alt="User Image" class="img-thumbnail" style="max-width: 150px;">
+}
+else
+{
+    <p>خطأ: لم يتم العثور على بيانات المستخدم.</p>
+}

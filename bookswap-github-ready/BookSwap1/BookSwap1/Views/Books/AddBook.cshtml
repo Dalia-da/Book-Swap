@@ -1,0 +1,127 @@
+﻿@model BookSwap.Models.AddBookViewModel
+
+@{
+    ViewData["Title"] = "Add Book";
+}
+
+<h2 class="text-center mb-4">إضافة كتاب جديد</h2>
+
+ <div class="container">
+    <form asp-action="AddBook" method="post" enctype="multipart/form-data">
+        <div class="form-group mb-3">
+            <label asp-for="Title" class="form-label fs-5">عنوان الكتاب</label>
+            <input asp-for="Title" class="form-control form-control-lg" placeholder="أدخل عنوان الكتاب" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Author" class="form-label fs-5">اسم المؤلف</label>
+            <input asp-for="Author" class="form-control form-control-lg" placeholder="أدخل اسم المؤلف" />
+            <span asp-validation-for="Author" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Genre" class="form-label fs-5">نوع الكتاب</label>
+            <select asp-for="Genre" class="form-control form-control-lg">
+                <option value="">اختر نوع الكتاب</option>
+                <option value="روايات">روايات </option>
+                <option value="كتب علميه">كتب علميه</option>
+                <option value="كتب تاريخيه">كتب تاريخيه</option>
+                 <option value="كتب تاريخيه">كتب دينيه</option>
+                <option value="كتب جامعية">كتب جامعية</option>
+
+            </select>
+            <span asp-validation-for="Genre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="YearPublished" class="form-label fs-5">سنة النشر</label>
+            <input asp-for="YearPublished" class="form-control form-control-lg" type="number" placeholder="أدخل سنة النشر" />
+            <span asp-validation-for="YearPublished" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+    <label asp-for="BookImage" class="form-label fs-5">صورة الكتاب</label>
+    <input asp-for="BookImage" class="form-control form-control-lg" type="file" />
+    <span asp-validation-for="BookImage" class="text-danger"></span>
+</div>
+
+
+        <div class="form-group">
+            <label asp-for="ISBN" class="control-label"></label>
+            <input asp-for="ISBN" class="form-control" />
+            <span asp-validation-for="ISBN" class="text-danger"></span>
+        </div>
+
+
+        <button type="submit" class="btn btn-success btn-lg w-100">إضافة الكتاب</button>
+    </form>
+</div>
+
+ <style>
+     body {
+        background: #f5f5f5;
+        font-family: 'Roboto', sans-serif;
+        overflow-x: hidden;
+    }
+
+     h2 {
+        color: #007bff;
+        font-weight: bold;
+        font-size: 2.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+     .container {
+        max-width: 600px;
+        margin-top: 50px;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: box-shadow 0.4s ease, transform 0.3s ease;
+    }
+
+        .container:hover {
+            box-shadow: 0 6px 20px rgba(255, 94, 98, 0.6), 0 10px 40px rgba(254, 180, 123, 0.7);
+            transform: scale(1.02);
+        }
+
+     .form-control {
+        border-radius: 0.375rem;
+        border: 1px solid #ced4da;
+        box-shadow: none;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25);
+        }
+
+    .form-label {
+        font-weight: bold;
+    }
+
+     .btn-success {
+        background: linear-gradient(180deg, #ff7e5f, #feb47b);
+        border: none;
+        padding: 15px;
+        font-size: 1.2rem;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(180deg, #ff7e5f, #feb47b);
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+
+     .text-danger {
+        font-size: 0.875rem;
+        font-style: italic;
+    }
+</style>

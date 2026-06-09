@@ -1,0 +1,70 @@
+﻿@model BookSwap.Models.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container">
+    <div class="row shadow rounded">
+        <div class="col-sm-6 col-md-6 col-lg-6 col-xl-6">
+            <div>
+                <img src="~/images/i.jpeg" class="w-100 h-100 " alt="thali" />
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-6 col-lg-6 col-xl-6">
+            <form autocomplete="off" method="post" class="m-3 p-3" action="/Account/Register" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <h2 class="text-pink text-muted">Register</h2>
+                    <span class="fst-italic text-muted">Create Your account</span>
+                </div>
+
+                <div class="mb-3">
+                    @Html.ValidationSummary()
+                </div>
+
+                <div class="form-floating mb-3">
+                    @Html.TextBoxFor(m => m.Name, new { @class = "form-control", placeholder = "Name" })
+                    <label for="Name">Name</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    @Html.TextAreaFor(m => m.Address, new { @class = "form-control", placeholder = "Address" })
+                    <label for="Address">Address</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    @Html.TextAreaFor(m => m.Email, new { @class = "form-control", placeholder = "Email" })
+                    <label for="Email">Email</label>
+                </div>
+
+                <div class="input-box underline">
+                    <input type="file" name="ImageURL" accept="image/*" required>
+                    <div class="underline"></div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Password", id = "passwordField" })
+                    <label for="passwordField">Password</label>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="showPassword" onclick="togglePasswordVisibility()">
+                    <label class="form-check-label" for="showPassword">Show Password</label>
+                </div>
+
+                <button type="submit" class="btn btn-sm w-100 btn-dark p-2 shadow rounded">Register</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePasswordVisibility() {
+        var passwordField = document.getElementById("passwordField");
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+        } else {
+            passwordField.type = "password";
+        }
+    }
+</script>

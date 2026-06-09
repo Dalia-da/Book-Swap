@@ -1,0 +1,158 @@
+﻿@model BookSwap.Models.Book
+
+@{
+    ViewData["Title"] = "تفاصيل الكتاب";
+}
+
+<div class="container mt-4">
+    <!-- رسالة تصحيح الأخطاء -->
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info">
+            @TempData["Message"]
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="book-details-left">
+                <h2 class="book-title text-dark">@Model.Title</h2>
+                <div class="book-info">
+                    <p class="text-muted"><strong>المؤلف:</strong> @Model.Author</p>
+                    <p class="text-muted"><strong>النوع:</strong> @Model.Genre</p>
+                    <p class="text-muted"><strong>سنة النشر:</strong> @Model.YearPublished</p>
+                    <p class="text-muted"><strong>ISBN:</strong> @Model.ISBN</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="book-image-container">
+                <img src="@Model.ImagePath" alt="@Model.Title" class="img-fluid book-cover" />
+                <div class="book-actions">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <a href="@Url.Action("LendBook", "Books", new { bookId = Model.Id })" class="btn btn-success mt-2">إضافة إلى مكتبتي</a>
+                    }
+                    <a href="@Url.Action("BookCategories")" class="btn btn-primary mt-2">العودة للقائمة</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم التعليقات -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">التعليقات</h3>
+
+            <!-- نموذج إضافة تعليق -->
+            @if (User.Identity.IsAuthenticated)
+            {
+                <form asp-action="AddComment" method="post" class="mb-4">
+                    <input type="hidden" name="BookId" value="@Model.Id" />
+                    <div class="form-group">
+                        <textarea name="CommentText" class="form-control" rows="3" placeholder="أضف تعليقك هنا..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">إرسال التعليق</button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <p>يرجى <a asp-controller="Account" asp-action="Login">تسجيل الدخول</a> لإضافة تعليق.</p>
+                </div>
+            }
+
+            <!-- عرض التعليقات -->
+            @if (Model.Comments != null && Model.Comments.Any())
+            {
+                <ul class="comment-list">
+                    @foreach (var comment in Model.Comments)
+                    {
+                        <li class="comment-item">
+                            <a asp-controller="Account" asp-action="Profile" asp-route-userId="@comment.UserId">
+                                <img src="@(comment.User?.ImagePath ?? "/images/default.png")" alt="@comment.UserName" class="profile-image" />
+                            </a>
+                            <div class="comment-content">
+                                <strong>@comment.UserName</strong>
+                                @if (!string.IsNullOrEmpty(comment.User?.Email))
+                                {
+                                    <p class="comment-email"><small>@comment.User.Email</small></p>
+                                }
+                                <p class="comment-text">@comment.Text</p>
+                                <small class="comment-date">@comment.CreatedDate.ToString("g")</small>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>لا توجد تعليقات بعد.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .book-details-left {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .book-image-container {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .book-cover {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+
+    .comment-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .comment-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+
+    .profile-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+    }
+
+    .comment-content {
+        flex-grow: 1;
+    }
+
+    .comment-email {
+        margin: 5px 0 0 0;
+        color: #666;
+    }
+
+    .comment-text {
+        margin: 5px 0;
+    }
+
+    .comment-date {
+        display: block;
+        color: #888;
+    } 
+</style>

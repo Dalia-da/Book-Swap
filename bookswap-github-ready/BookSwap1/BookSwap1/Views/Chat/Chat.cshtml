@@ -1,0 +1,212 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<h2 class="text-center my-4">Chat with @ViewBag.ReceiverName</h2>
+<div class="container">
+    <div id="chatMessages" class="border p-3 mb-3" style="height: 400px; overflow-y: auto;">
+     </div>
+    <form id="chatForm" method="post" asp-action="SendMessage" asp-controller="Chat" data-receiver-id="@ViewBag.ReceiverId">
+        <div class="input-group">
+            <input type="text" id="messageInput" name="message" class="form-control" placeholder="Type your message..." />
+            <button type="submit" class="btn btn-primary">Send</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    #chatMessages {
+        background-color: #f8f9fa;
+    }
+     .message {
+        max-width: 60%;
+        margin: 10px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        display: inline-block;
+        word-wrap: break-word;
+    }
+    .sent {
+        background-color: #dcf8c6;  
+        margin-left: 40%;
+        text-align: right;
+    }
+    .received {
+        background-color: #fff;  
+        margin-right: 40%;
+    }
+    .message strong {
+        font-size: 14px;
+    }
+    .message span {
+        display: block;
+        font-size: 16px;
+    }
+    .message small {
+        display: block;
+        font-size: 12px;
+        color: #888;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var receiverId = '@ViewBag.ReceiverId';
+        var currentUserId = '@ViewBag.CurrentUserId';
+
+         function getUserName(userId, callback) {
+            $.get('/Chat/GetUserName?userId=' + userId, function (data) {
+                callback(data.name);
+            });
+        }
+
+         function loadMessages() {
+            $.get('/Chat/GetMessages?receiverId=' + receiverId, function (data) {
+                var messages = $('#chatMessages');
+                var wasAtBottom = messages[0].scrollHeight - messages.scrollTop() === messages.outerHeight();
+                messages.empty();
+                $.each(data, function (index, message) {
+                    getUserName(message.senderId, function (senderName) {
+                        var isSender = message.senderId === currentUserId;
+                        var messageClass = isSender ? 'sent' : 'received';
+                        var messageHtml = `
+                            <div class="message ${messageClass}" data-message-id="${index}" data-sender-id="${message.senderId}">
+                                <strong>${senderName}</strong><br>
+                                <span class="message-text">${message.message}</span>
+                                <small>${new Date(message.sentDate).toLocaleString()}</small>
+                                ${isSender ? '<div class="message-options"><button class="btn btn-sm btn-danger delete-btn">Delete</button><button class="btn btn-sm btn-warning edit-btn">Edit</button><button class="btn btn-sm btn-info copy-btn">Copy</button></div>' : ''}
+                            </div>
+                        `;
+                        messages.append(messageHtml);
+                        if (wasAtBottom) {
+                            messages.scrollTop(messages[0].scrollHeight);
+                        }
+                    });
+                });
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log('Error loading messages: ' + textStatus + ' ' + errorThrown);
+            });
+        }
+
+         loadMessages();
+
+         $('#chatForm').on('submit', function (e) {
+            e.preventDefault();
+            var message = $('#messageInput').val();
+            var receiverId = $(this).data('receiver-id');
+
+            $.post('/Chat/SendMessage', { receiverId: receiverId, message: message }, function (response) {
+                if (response.success) {
+                    $('#messageInput').val('');
+                    loadMessages();  
+                } else {
+                    alert(response.message);
+                }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log('Error sending message: ' + textStatus + ' ' + errorThrown);
+            });
+        });
+
+         $(document).on('click', '.delete-btn', function () {
+            var messageDiv = $(this).closest('.message');
+            var messageId = messageDiv.data('message-id');
+            var senderId = messageDiv.data('sender-id');
+            if (senderId === currentUserId) {
+                if (confirm('Are you sure you want to delete this message?')) {
+                    $.post('/Chat/DeleteMessage', { messageId: messageId, senderId: senderId }, function (response) {
+                        if (response.success) {
+                            loadMessages();
+                        } else {
+                            alert(response.message);
+                        }
+                    });
+                }
+            }
+        });
+
+         $(document).on('click', '.edit-btn', function () {
+            var messageDiv = $(this).closest('.message');
+            var messageText = messageDiv.find('.message-text').text();
+            var newMessage = prompt('Edit your message:', messageText);
+            if (newMessage && newMessage !== messageText) {
+                var messageId = messageDiv.data('message-id');
+                var senderId = messageDiv.data('sender-id');
+                if (senderId === currentUserId) {
+                    $.post('/Chat/EditMessage', { messageId: messageId, senderId: senderId, newMessage: newMessage }, function (response) {
+                        if (response.success) {
+                            loadMessages();
+                        } else {
+                            alert(response.message);
+                        }
+                    });
+                }
+            }
+        });
+
+         $(document).on('click', '.copy-btn', function () {
+            var messageText = $(this).closest('.message').find('.message-text').text();
+            navigator.clipboard.writeText(messageText).then(function () {
+                alert('Message copied to clipboard!');
+            }, function () {
+                alert('Failed to copy message.');
+            });
+        });
+    });
+</script>
+
+<style>
+    #chatMessages {
+        background-color: #f8f9fa;
+        padding: 10px;
+    }
+    .message {
+        max-width: 60%;
+        margin: 10px 0;
+        padding: 10px 15px;
+        border-radius: 10px;
+        display: block;
+        word-wrap: break-word;
+        position: relative;
+    }
+    .sent {
+        background-color: #dcf8c6;
+        float: right;
+        clear: both;
+        margin-left: 0;
+        margin-right: 10px;  
+    }
+    .received {
+        background-color: #fff;
+        float: left;
+        clear: both;
+        margin-right: 0;
+        margin-left: 10px;  
+    }
+    .message strong {
+        font-size: 14px;
+    }
+    .message span {
+        display: block;
+        font-size: 16px;
+    }
+    .message small {
+        display: block;
+        font-size: 12px;
+        color: #888;
+    }
+    .message-options {
+        display: none;
+        position: absolute;
+        right: 5px;
+        top: 5px;
+    }
+    .message.sent:hover .message-options {
+        display: block;
+    }
+    .btn-sm {
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+</style>

@@ -1,0 +1,537 @@
+﻿@model IEnumerable<BookSwap.Models.LendHistory>
+
+@{
+    ViewData["Title"] = "Lend";
+}
+
+<!-- إضافة Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<h2 class="text-center my-4">Books are ready to be lent</h2>
+
+<div class="container mb-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search by Book Title, Author, or ISBN..." onkeyup="filterHistory()" />
+        </div>
+    </div>
+</div>
+
+<!-- زر الأيقونة الثابت -->
+<button id="chatBotToggle" class="chat-bot-toggle">
+    <i class="fas fa-comment"></i>
+</button>
+
+<!-- Chat Modal -->
+<div id="chatModal" class="chat-modal" style="display: none;">
+    <div class="chat-modal-content">
+        <span id="closeChat" class="close-btn">×</span>
+        <div id="chatContainer" class="chat-container">
+            <div id="chatMessages" class="border p-2" style="height: 70vh; overflow-y: auto;"></div>
+            <div id="chatButtons" class="mt-2">
+                <button class="btn btn-secondary m-1" onclick="sendQuery('أنواع الكتب')">أنواع الكتب</button>
+                <button class="btn btn-secondary m-1" onclick="sendQuery('أفضل الكتب')">أفضل الكتب</button>
+                <button class="btn btn-secondary m-1" onclick="sendQuery('كتب جديدة')">كتب جديدة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إضافة Toast Notification -->
+<div id="toast" class="toast" style="display: none;"></div>
+
+<div class="container">
+    <div class="row" id="lendHistoryContainer">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-6 col-lg-3 mb-4 lend-history-item">
+                <div class="card custom-card">
+                    <img src="@item.BookImagePath" class="card-img-top" alt="@item.BookTitle">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.BookTitle</h5>
+                        <p class="card-text"><strong>Author:</strong> @item.BookAuthor</p>
+                        <p class="card-text"><strong>Published Year:</strong> @item.BookYearPublished</p>
+                        <p class="card-text"><strong>Lent on:</strong> @item.LendDate.ToString("yyyy-MM-dd")</p>
+                        <p class="card-text isbn"><strong>ISBN:</strong> @item.ISBN</p>
+
+                        <div class="user-info" onclick="redirectToProfile('@item.UserId')">
+                            <img src="@item.UserProfileImagePath" alt="@item.Name" class="user-image" />
+                            <p class="user-name">Lent by: @item.Name</p>
+                        </div>
+                        <div>
+                            <a href="@Url.Action("Details", "Books", new { id = item.Id })" class="btn btn-primary btn-sm mt-3">
+                                show details
+                            </a>
+                        </div>
+                        <div class="button-group text-center mt-3">
+                            @if (item.UserEmail == User.Identity.Name)
+                            {
+                                <form action="@Url.Action("DeleteLendHistory", "Books")" method="post" style="display:inline;">
+                                    <input type="hidden" name="lendHistoryId" value="@item.Id" />
+                                    <button type="submit" class="btn btn-danger w-100 mt-2">Delete</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-controller="Chat" asp-action="Chat" asp-route-receiverId="@item.UserId" class="chat-link mt-2">
+                                    <span class="chat-bubble">chat</span>
+                                </a>
+                            }
+                        </div>
+
+                        <!-- نظام التقييم المحسن -->
+                        <div class="rating-section mt-3">
+                            @if (item.Ratings != null && item.Ratings.Any())
+                            {
+                                <p>Average Rating: @item.Ratings.Average(r => r.Rating).ToString("0.0") / 5</p>
+                            }
+                            else
+                            {
+                                <p>No ratings yet.</p>
+                            }
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <form asp-action="AddRating" method="post" class="mt-2 rating-form" data-lend-id="@item.Id">
+                                    <input type="hidden" name="lendHistoryId" value="@item.Id" />
+                                    <input type="hidden" name="rating" id="rating-@item.Id" value="0" />
+                                    <div class="star-rating modern-rating" data-lend-id="@item.Id">
+                                        @for (int i = 5; i >= 1; i--)
+                                        {
+                                            <span class="star" data-value="@i">★</span>
+                                        }
+                                    </div>
+                                    <p class="rating-feedback text-muted mt-1" id="feedback-@item.Id">Select a rating</p>
+                                    <button type="submit" class="btn btn-success btn-sm mt-2">Rate</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Please <a href="@Url.Action("Login", "Account")">log in</a> to rate this book.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .custom-card {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+
+        .custom-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .user-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 10px;
+        object-fit: cover;
+        border: 2px solid #ddd;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .user-info:hover .user-image {
+        transform: scale(1.2);
+        box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+    }
+
+    .user-name {
+        font-size: 16px;
+        color: #333;
+        font-weight: bold;
+    }
+
+    .btn {
+        font-size: 14px;
+    }
+
+    #searchInput {
+        border-radius: 20px;
+        padding: 10px;
+        font-size: 16px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: width 0.3s ease;
+    }
+
+        #searchInput:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 0, 255, 0.5);
+            width: 100%;
+        }
+
+    .card-title {
+        font-size: 18px;
+        color: #004085;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .card-text {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .card-img-top {
+        height: 250px;
+        object-fit: contain;
+        background-color: #f8f9fa;
+        width: 100%;
+    }
+
+    /* تحسينات نظام التقييم */
+    .modern-rating {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        direction: rtl;
+    }
+
+        .modern-rating .star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.3s ease, transform 0.2s ease;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+            .modern-rating .star:hover,
+            .modern-rating .star.active {
+                color: #ffd700;
+                transform: scale(1.2);
+            }
+
+    .rating-feedback {
+        font-size: 12px;
+        text-align: center;
+        min-height: 20px;
+    }
+
+    .rating-form button {
+        transition: background-color 0.3s ease;
+    }
+
+        .rating-form button:hover {
+            background-color: #218838;
+        }
+
+    /* تصميم أيقونة الشات بدون إطار */
+    .chat-link {
+        display: inline-block;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .chat-bubble {
+        display: inline-block;
+        position: relative;
+        background: #28a745;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 15px;
+        font-size: 14px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease;
+    }
+
+        .chat-bubble::before {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #28a745 transparent transparent;
+        }
+
+    .chat-link:hover .chat-bubble {
+        transform: scale(1.05);
+    }
+
+    .btn-chat::before,
+    .btn-chat::after {
+        display: none;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+    }
+
+    /* تنسيق مستطيلات الشات */
+    #chatMessages p {
+        margin: 10px 0;
+        padding: 10px 15px;
+        border-radius: 10px;
+        display: block;
+        max-width: 70%;
+        position: relative;
+    }
+
+        #chatMessages p.user-msg {
+            background-color: #007bff;
+            color: white;
+            float: right; /* السؤال على اليمين */
+            clear: both;
+        }
+
+            #chatMessages p.user-msg::before {
+                content: "";
+                position: absolute;
+                bottom: -10px;
+                right: 15px;
+                border-width: 10px 10px 0;
+                border-style: solid;
+                border-color: #007bff transparent transparent;
+            }
+
+        #chatMessages p.ai-msg {
+            background-color: #28a745;
+            color: white;
+            float: left; /* الرد على اليسار */
+            clear: both;
+        }
+
+            #chatMessages p.ai-msg::before {
+                content: "";
+                position: absolute;
+                bottom: -10px;
+                left: 15px;
+                border-width: 10px 10px 0;
+                border-style: solid;
+                border-color: #28a745 transparent transparent;
+            }
+
+    /* تنسيق زر الأيقونة الثابت */
+    .chat-bot-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #28a745;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1001;
+        transition: transform 0.3s ease;
+    }
+
+        .chat-bot-toggle:hover {
+            transform: scale(1.1);
+        }
+
+    /* تنسيق Modal الشات */
+    .chat-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    .chat-modal-content {
+        background-color: #fff;
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 600px;
+        height: 80vh;
+        position: relative;
+        overflow-y: auto;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+        cursor: pointer;
+        color: #333;
+    }
+
+        .close-btn:hover {
+            color: #ff0000;
+        }
+
+    .chat-container {
+        height: 100%;
+        overflow-y: auto;
+    }
+</style>
+
+<script>
+    function filterHistory() {
+        var input = document.getElementById("searchInput").value.toLowerCase();
+        var items = document.getElementsByClassName("lend-history-item");
+
+        for (var i = 0; i < items.length; i++) {
+            var titleElement = items[i].getElementsByClassName("card-title")[0];
+            var isbnElement = items[i].getElementsByClassName("isbn")[0];
+            var title = titleElement && titleElement.innerText ? titleElement.innerText.toLowerCase() : "";
+            var isbn = isbnElement && isbnElement.innerText ? isbnElement.innerText.toLowerCase().split("isbn")[0].trim() : "";
+
+            var cardTextElements = items[i].getElementsByClassName("card-text");
+            var author = "";
+            for (var j = 0; j < cardTextElements.length; j++) {
+                if (cardTextElements[j].innerText.toLowerCase().startsWith("author:")) {
+                    author = cardTextElements[j].innerText.toLowerCase().split("author:")[1].trim();
+                    break;
+                }
+            }
+
+            if (title.includes(input) || author.includes(input) || isbn.includes(input)) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+
+    function redirectToProfile(userId) {
+        window.location.href = "/Profile/Details?userId=" + userId;
+    }
+
+    function sendQuery(query) {
+        var chatMessages = document.getElementById("chatMessages");
+        chatMessages.innerHTML += "<p class='user-msg'><strong>You:</strong> " + query + "</p>";
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // عرض الإجابة في سطر ثاني
+        var response = "";
+        switch (query) {
+            case "أنواع الكتب":
+                response = "<p class='ai-msg'><strong>AI:</strong> أنواع الكتب المتاحة هي ثلاثة: علمية، ثقافية، واجتماعية. استكشف القائمة لمعرفة المزيد!</p>";
+                break;
+            case "أفضل الكتب":
+                response = "<p class='ai-msg'><strong>AI:</strong> أفضل الكتب الموصى بها تشمل '1984' لجورج أورويل، 'الحياة 3.0' لماكس تيغمارك، و'الكيميائي' لباولو كويلو. جربها!</p>";
+                break;
+            case "كتب جديدة":
+                response = "<p class='ai-msg'><strong>AI:</strong> الكتب الجديدة تشمل إصدارات 2024 مثل 'الذكاء الاصطناعي المستقبلي' و'رحلة إلى المريخ'. تحقق من القائمة للتحديثات!</p>";
+                break;
+        }
+        chatMessages.innerHTML += response;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Toggle لفتح وإغلاق الشات بوت
+    document.getElementById("chatBotToggle").addEventListener("click", function () {
+        var chatModal = document.getElementById("chatModal");
+        chatModal.style.display = "block";
+        document.body.style.overflow = "hidden"; // منع التمرير في الخلفية
+
+        // إضافة الجملة الافتتاحية
+        var chatMessages = document.getElementById("chatMessages");
+        if (!chatMessages.innerHTML.includes("مرحبًا بك في تطبيقنا")) {
+            chatMessages.innerHTML = "<p class='ai-msg'><strong>AI:</strong> مرحبًا بك في تطبيقنا! كيف يمكنني مساعدتك اليوم؟</p>" + chatMessages.innerHTML;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+
+    document.getElementById("closeChat").addEventListener("click", function () {
+        var chatModal = document.getElementById("chatModal");
+        chatModal.style.display = "none";
+        document.body.style.overflow = ""; // إعادة التمرير
+    });
+
+    // إغلاق الشات لما يضغط خارج المودال
+    window.addEventListener("click", function (event) {
+        var chatModal = document.getElementById("chatModal");
+        if (event.target == chatModal) {
+            chatModal.style.display = "none";
+            document.body.style.overflow = "";
+        }
+    });
+
+    // JavaScript لنظام التقييم المحسن
+    document.addEventListener("DOMContentLoaded", function () {
+        const ratingContainers = document.querySelectorAll(".modern-rating");
+
+        ratingContainers.forEach(container => {
+            const stars = container.querySelectorAll(".star");
+            const lendId = container.getAttribute("data-lend-id");
+            const ratingInput = document.getElementById(`rating-${lendId}`);
+            const feedback = document.getElementById(`feedback-${lendId}`);
+
+            stars.forEach(star => {
+                // تأثير التحويم
+                star.addEventListener("mouseover", function () {
+                    const value = parseInt(this.getAttribute("data-value"));
+                    stars.forEach(s => {
+                        const starValue = parseInt(s.getAttribute("data-value"));
+                        if (starValue <= value) {
+                            s.classList.add("active");
+                        } else {
+                            s.classList.remove("active");
+                        }
+                    });
+                    feedback.textContent = `Rating: ${value}/5`;
+                });
+
+                // إعادة النجوم إلى حالتها الافتراضية عند مغادرة التحويم
+                container.addEventListener("mouseleave", function () {
+                    const currentValue = ratingInput.value || 0;
+                    stars.forEach(s => {
+                        const starValue = parseInt(s.getAttribute("data-value"));
+                        if (currentValue && starValue <= currentValue) {
+                            s.classList.add("active");
+                        } else {
+                            s.classList.remove("active");
+                        }
+                    });
+                    feedback.textContent = currentValue ? `Rating: ${currentValue}/5` : "Select a rating";
+                });
+
+                // تحديد التقييم عند الضغط
+                star.addEventListener("click", function () {
+                    const value = this.getAttribute("data-value");
+                    ratingInput.value = value;
+                    feedback.textContent = `Rating: ${value}/5`;
+                    stars.forEach(s => {
+                        const starValue = parseInt(s.getAttribute("data-value"));
+                        if (starValue <= value) {
+                            s.classList.add("active");
+                        } else {
+                            s.classList.remove("active");
+                        }
+                    });
+                });
+            });
+        });
+    });
+</script>

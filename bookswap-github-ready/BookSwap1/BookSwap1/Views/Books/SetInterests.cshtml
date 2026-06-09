@@ -1,0 +1,45 @@
+﻿@model UserInterestsViewModel
+
+<h2 class="text-center mb-4">حدد اهتماماتك</h2>
+
+<div class="container">
+    <form asp-action="SetInterests" method="post">
+        <div class="form-group mb-3">
+            <label asp-for="SelectedGenre" class="form-label fs-5">اختر النوع الذي تفضله</label>
+            <select asp-for="SelectedGenre" class="form-control form-control-lg">
+                <option value="">اختر النوع</option>
+                @if (Model.GenreOptions != null && Model.GenreOptions.Any())
+                {
+                    @foreach (var genre in Model.GenreOptions)
+                    {
+                        <option value="@genre.Value">@genre.Text</option>
+                    }
+                }
+                else
+                {
+                    <option value="">لا توجد أنواع متاحة</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="SelectedAuthor" class="form-label fs-5">اختر المؤلف المفضل</label>
+            <select asp-for="SelectedAuthor" class="form-control form-control-lg">
+                <option value="">اختر المؤلف</option>
+                @if (Model.AuthorOptions != null && Model.AuthorOptions.Any())
+                {
+                    @foreach (var author in Model.AuthorOptions)
+                    {
+                        <option value="@author.Value">@author.Text</option>
+                    }
+                }
+                else
+                {
+                    <option value="">لا توجد مؤلفين متاحين</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg w-100">تم</button>
+    </form>
+</div>

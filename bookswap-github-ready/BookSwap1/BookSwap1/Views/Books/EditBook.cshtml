@@ -1,0 +1,52 @@
+﻿@model BookSwap.Models.AddBookViewModel
+
+<h2 class="text-center mb-4">تعديل بيانات الكتاب</h2>
+
+<div class="container">
+    <form asp-action="EditBook" method="post" enctype="multipart/form-data">
+        <input asp-for="Id" type="hidden" />
+
+        <div class="form-group mb-3">
+            <label asp-for="Title" class="form-label">عنوان الكتاب</label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+        <div class="form-group mb-3">
+            <label asp-for="ISBN" class="form-label">ISBN</label>
+            <input asp-for="ISBN" class="form-control" />
+            <span asp-validation-for="ISBN" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Author" class="form-label">المؤلف</label>
+            <input asp-for="Author" class="form-control" />
+            <span asp-validation-for="Author" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Genre" class="form-label">النوع</label>
+            <input asp-for="Genre" class="form-control" />
+            <span asp-validation-for="Genre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="YearPublished" class="form-label">سنة النشر</label>
+            <input asp-for="YearPublished" class="form-control" />
+            <span asp-validation-for="YearPublished" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="BookImage" class="form-label">تحديث الصورة</label>
+            <input asp-for="BookImage" type="file" class="form-control" />
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <div class="mt-3">
+                    <img src="@Model.ImagePath" alt="صورة الكتاب" style="width: 150px; height: auto;" />
+                </div>
+            }
+            <span asp-validation-for="BookImage" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">تحديث البيانات</button>
+    </form>
+</div>
